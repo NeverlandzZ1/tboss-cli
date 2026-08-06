@@ -62,6 +62,7 @@ def _command_to_json_schema(cmd_name: str, cmd_spec: dict[str, Any]) -> dict[str
 
 
 _ROLE_BOTH_COMMANDS = {
+	"hello",
 	"login",
 	"status",
 	"doctor",
@@ -279,6 +280,19 @@ def _format_mcp_tools(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 SCHEMA_DATA = {
+	"hello": {
+    "description": "向指定的人打招呼（本地示例）",
+    "args": [
+        {"name": "name", "required": True, "description": "要打招呼的名字"},
+    ],
+    "options": {
+        "--loud/--no-loud": {
+            "type": "bool",
+            "default": False,
+            "description": "是否大声喊",
+        },
+    },
+},
 	"name": "boss-agent-cli",
 	"description": "BOSS直聘本地辅助工具，共 38 个顶层命令。默认低风险模式聚焦只读、本地辅助、用户主动触发；自动触达、批量操作和候选人个人信息处理默认受限。",
 	"commands": {

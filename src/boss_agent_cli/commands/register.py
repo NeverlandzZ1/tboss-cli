@@ -3,6 +3,7 @@
 import click
 
 from boss_agent_cli.commands import (
+	hello,
 	ai_cmd,
 	ai_local,
 	agent,
@@ -53,6 +54,7 @@ from boss_agent_cli.platforms import list_recruiter_platforms
 
 def register_candidate_commands(cli: click.Group) -> None:
 	"""Register candidate and shared top-level commands."""
+	cli.add_command(hello.hello_cmd, "hello")
 	cli.add_command(schema.schema_cmd, "schema")
 	cli.add_command(login.login_cmd, "login")
 	cli.add_command(logout.logout_cmd, "logout")
