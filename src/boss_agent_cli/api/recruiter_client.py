@@ -411,6 +411,59 @@ class BossRecruiterClient(_BaseHttpClient):
 			params["jobId"] = job_id
 		return self._request("GET", ep.BOSS_SEARCH_GEEK_URL, params=params)
 
+	def recommend_geeks(
+		self,
+		job_id: str,
+		*,
+		page: int = 1,
+		age: str = "16,-1",
+		activation: str = "0",
+		school: str = "0",
+		gender: str = "0",
+		recent_not_view: str = "0",
+		exchange_resume_with_colleague: str = "0",
+		major: str = "0",
+		keyword1: str = "-1",
+		switch_job_frequency: str = "0",
+		degree: str = "0",
+		experience: str = "0",
+		intention: str = "0",
+		salary: str = "0",
+		cover_screen_memory: str = "0",
+		card_type: str = "0",
+	) -> dict[str, Any]:
+		"""每日推荐牛人（HR "推荐"页 - /web/frame/recommend/）。
+
+		注意：参数默认值均按抓包实证复刻，除 `jobId`/`page` 外几乎不用改动。
+		Referer 需带 jobid，故这里显式覆盖 default referer 逻辑。
+		"""
+		params: dict[str, Any] = {
+			"age": age,
+			"activation": activation,
+			"school": school,
+			"gender": gender,
+			"recentNotView": recent_not_view,
+			"exchangeResumeWithColleague": exchange_resume_with_colleague,
+			"major": major,
+			"keyword1": keyword1,
+			"switchJobFrequency": switch_job_frequency,
+			"degree": degree,
+			"experience": experience,
+			"intention": intention,
+			"salary": salary,
+			"jobId": job_id,
+			"page": page,
+			"coverScreenMemory": cover_screen_memory,
+			"cardType": card_type,
+		}
+		referer = f"{ep.BASE_URL}/web/frame/recommend/?jobid={job_id}&status=0"
+		return self._request(
+			"GET",
+			ep.BOSS_RECOMMEND_GEEKS_URL,
+			params=params,
+			extra_headers={"Referer": referer},
+		)
+
 	def view_geek(self, geek_id: str, job_id: str, security_id: str | None = None) -> dict[str, Any]:
 		params: dict[str, Any] = {"encryptGeekId": geek_id, "encryptJobId": job_id}
 		if security_id:

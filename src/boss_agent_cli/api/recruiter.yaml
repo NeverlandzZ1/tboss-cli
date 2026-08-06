@@ -79,6 +79,10 @@ endpoints:
     method: GET
     path: "/wapi/zpitem/web/boss/search/geeks.json"
     referer: "/web/frame/search/"
+  boss_recommend_geeks:
+    method: GET
+    path: "/wapi/zpjob/rec/geek/list"
+    referer: "/web/frame/recommend/"
   boss_view_geek:
     method: GET
     path: "/wapi/zpjob/view/geek/info"

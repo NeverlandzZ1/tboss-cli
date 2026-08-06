@@ -38,6 +38,7 @@ BOSS_GREET_NEW_LIST_URL = _url("boss_greet_new_list")
 
 # ── 候选人搜索与简历查看 ────────────────────────────
 BOSS_SEARCH_GEEK_URL = _url("boss_search_geek")
+BOSS_RECOMMEND_GEEKS_URL = _url("boss_recommend_geeks")
 BOSS_VIEW_GEEK_URL = _url("boss_view_geek")
 BOSS_CHAT_GEEK_INFO_URL = _url("boss_chat_geek_info")
 

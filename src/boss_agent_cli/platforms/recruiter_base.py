@@ -92,6 +92,10 @@ class RecruiterPlatform(ABC):
 	def view_geek(self, geek_id: str, job_id: str, security_id: str | None = None) -> dict[str, Any]:
 		"""查看候选人简历。"""
 
+	def recommend_geeks(self, job_id: str, *, page: int = 1, **filters: Any) -> dict[str, Any]:
+		"""每日推荐牛人。"""
+		raise NotImplementedError(f"{self.name} does not implement recommend_geeks")
+
 	# ── 消息 / 聊天 ──────────────────────────────────────
 
 	@abstractmethod
