@@ -36,7 +36,7 @@
 - `assisted`(默认):拦截"平台写入 / 候选人筛选 / 简历外呼"等敏感命令,报 `COMPLIANCE_BLOCKED`
 - `research`:全部放行,需**显式**切换 `boss config set operating_mode research`
 
-被默认拦截的命令(节选):`greet`、`batch-greet`、`apply`、`exchange`、`pipeline`、`hr candidates`、`hr resume`、`hr request-resume`、`chatmsg --raw` 等。
+被默认拦截的命令(节选):`greet`、`batch-greet`、`apply`、`exchange`、`pipeline`、`hr candidates`、`hr resume`、`hr request-resume`、`hr friend-detail`、`chatmsg --raw` 等。
 
 ## 招聘者(HR)命令
 
@@ -327,6 +327,29 @@ Options:
 ```
 
 若不传 `--friend-id`,内部先跑一次 `friend_list` 拉出 id 再打 `POST /wapi/zpchat/boss/userLastMsg`。返回的每条只有 `friendId / unread / msg_status / last_msg / last_time`——**没有姓名**。
+
+### `boss hr friend-detail <friend_id>...` — 反查加密 ID(source A 打通 resume 的钥匙)
+
+```
+Usage: boss hr friend-detail [OPTIONS] FRIEND_IDS...
+```
+
+场景:`hr chat` / `hr chatmsg` 只给到纯数字 `friendId + uid + jobId`,而 `hr resume` 需要**加密**的 `encryptUid / encryptJobId / securityId`。本命令批量打 `POST /wapi/zprelation/friend/getBossFriendListV2.json`,返回 `zpData.friendList[]`,关键字段:
+
+| 字段 | 用途 |
+| --- | --- |
+| `uid` | = friendId,数字 |
+| `encryptUid` | → `hr resume <encryptUid>` 第一个位参 |
+| `encryptJobId` | → `hr resume --job-id` |
+| `securityId` | → `hr resume --security-id` |
+| `name` | 候选人姓名 |
+| `friendSource` | 来源类型 |
+
+支持批量:`boss hr friend-detail 750327884 750327885 750327886`。之后串:
+```bash
+boss hr friend-detail 750327884
+boss hr resume <encryptUid> --job-id <encryptJobId> --security-id <securityId>
+```
 
 ### `boss hr candidates [query]` — 搜索候选人(BOSS 产品语境:**搜索牛人**)【已实测】
 

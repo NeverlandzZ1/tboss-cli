@@ -44,6 +44,7 @@ from boss_agent_cli.commands import (
 from boss_agent_cli.commands.recruiter import applications as recruiter_applications
 from boss_agent_cli.commands.recruiter import candidates as recruiter_candidates
 from boss_agent_cli.commands.recruiter import chat as recruiter_chat
+from boss_agent_cli.commands.recruiter import friend_detail as recruiter_friend_detail
 from boss_agent_cli.commands.recruiter import jobs as recruiter_jobs
 from boss_agent_cli.commands.recruiter import recommend as recruiter_recommend
 from boss_agent_cli.commands.recruiter import reply as recruiter_reply
@@ -131,3 +132,4 @@ def register_recruiter_commands(cli: click.Group) -> None:
 	hr_group.add_command(recruiter_recommend.recommend_cmd, "recommend")
 	hr_group.add_command(recruiter_reply.reply_cmd, "reply")
 	hr_group.add_command(recruiter_request_resume.request_resume_cmd, "request-resume")
+	hr_group.add_command(recruiter_friend_detail.friend_detail_cmd, "friend-detail")

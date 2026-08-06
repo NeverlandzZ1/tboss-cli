@@ -65,6 +65,7 @@ _POLICY_DEFINITIONS = {
 	"recruiter-chat": ("personal_data", "communication", "招聘者沟通列表涉及候选人会话数据。"),
 	"recruiter-chatmsg": ("personal_data", "communication", "候选人聊天记录涉及个人信息与通信内容。"),
 	"recruiter-last-messages": ("personal_data", "communication", "候选人最近消息摘要涉及通信内容。"),
+	"recruiter-friend-detail": ("personal_data", "candidate_profile", "候选人详情反查涉及个人信息与加密 ID。"),
 	"recruiter-resume": ("personal_data", "candidate_profile", "候选人在线简历/联系方式涉及个人信息。"),
 	"recruiter-reply": ("platform_write", "communication", "回复候选人属于平台写操作。"),
 	"recruiter-request-resume": ("platform_write", "candidate_profile", "请求候选人附件简历涉及个人信息授权。"),
