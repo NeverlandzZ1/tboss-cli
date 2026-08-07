@@ -82,6 +82,7 @@ def recommend_cmd(
 		handle_output(
 			ctx, "recruiter-recommend", data,
 			hints={"next_actions": [
+				"boss hr chat-start <encryptGeekId> --job-id <encryptJobId> --expect-id <expectId> --lid <lid> --security-id <securityId> — 首招（尽快调用，lid/securityId 有时效）",
 				"boss hr resume <geek_id> --job-id <id> --security-id <id> — 查看简历",
 				"boss hr chat — 打招呼后转入聊天",
 			]},

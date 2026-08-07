@@ -464,6 +464,46 @@ class BossRecruiterClient(_BaseHttpClient):
 			extra_headers={"Referer": referer},
 		)
 
+	def chat_start(
+		self,
+		encrypt_geek_id: str,
+		*,
+		job_id: str,
+		expect_id: str,
+		lid: str,
+		security_id: str,
+	) -> dict[str, Any]:
+		"""推荐池首招（触发默认招呼语，建立聊天关系）。
+
+		抓包实证：POST /wapi/zpjob/chat/start
+		成功返回 zpData.geekId = 数字 friendId，后续 hr reply / hr chat 直接可用。
+
+		所有参数均来自同一次 recommend_geeks 响应：
+		- encrypt_geek_id → geek.encryptGeekId
+		- lid             → geek.lid（含 sessionId，短期时效）
+		- expect_id       → geek.expectId
+		- security_id     → geek.securityId（一次性凭证，拿到就用）
+		- job_id          → 调 recommend_geeks 时的 encryptJobId
+		"""
+		data = {
+			"gid": encrypt_geek_id,
+			"suid": "",
+			"jid": job_id,
+			"expectId": expect_id,
+			"lid": lid,
+			"greet": "",
+			"from": "",
+			"securityId": security_id,
+			"customGreetingGuide": "-1",
+		}
+		referer = f"{ep.BASE_URL}/web/frame/recommend/?jobid={job_id}&status=0"
+		return self._request(
+			"POST",
+			ep.BOSS_CHAT_START_URL,
+			data=data,
+			extra_headers={"Referer": referer},
+		)
+
 	def view_geek(self, geek_id: str, job_id: str, security_id: str | None = None) -> dict[str, Any]:
 		params: dict[str, Any] = {"encryptGeekId": geek_id, "encryptJobId": job_id}
 		if security_id:

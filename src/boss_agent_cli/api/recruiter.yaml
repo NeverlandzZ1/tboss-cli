@@ -83,6 +83,10 @@ endpoints:
     method: GET
     path: "/wapi/zpjob/rec/geek/list"
     referer: "/web/frame/recommend/"
+  boss_chat_start:
+    method: POST
+    path: "/wapi/zpjob/chat/start"
+    referer: "/web/frame/recommend/"
   boss_view_geek:
     method: GET
     path: "/wapi/zpjob/view/geek/info"

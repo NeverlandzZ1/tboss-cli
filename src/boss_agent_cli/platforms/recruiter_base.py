@@ -96,6 +96,21 @@ class RecruiterPlatform(ABC):
 		"""每日推荐牛人。"""
 		raise NotImplementedError(f"{self.name} does not implement recommend_geeks")
 
+	def chat_start(
+		self,
+		encrypt_geek_id: str,
+		*,
+		job_id: str,
+		expect_id: str,
+		lid: str,
+		security_id: str,
+	) -> dict[str, Any]:
+		"""推荐池首招：建立聊天关系并触发职位默认招呼语。
+
+		参数全部取自同一次 recommend_geeks 响应。返回 zpData.geekId = 数字 friendId。
+		"""
+		raise NotImplementedError(f"{self.name} does not implement chat_start")
+
 	# ── 消息 / 聊天 ──────────────────────────────────────
 
 	@abstractmethod

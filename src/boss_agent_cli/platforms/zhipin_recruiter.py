@@ -116,6 +116,23 @@ class BossRecruiterPlatform(RecruiterPlatform):
 	def recommend_geeks(self, job_id: str, *, page: int = 1, **filters: Any) -> dict[str, Any]:
 		return self._client.recommend_geeks(job_id, page=page, **filters)
 
+	def chat_start(
+		self,
+		encrypt_geek_id: str,
+		*,
+		job_id: str,
+		expect_id: str,
+		lid: str,
+		security_id: str,
+	) -> dict[str, Any]:
+		return self._client.chat_start(
+			encrypt_geek_id,
+			job_id=job_id,
+			expect_id=expect_id,
+			lid=lid,
+			security_id=security_id,
+		)
+
 	def chat_geek_info(self, geek_id: str, security_id: str, job_id: int) -> dict[str, Any]:
 		return self._client.chat_geek_info(geek_id, security_id, job_id)
 
