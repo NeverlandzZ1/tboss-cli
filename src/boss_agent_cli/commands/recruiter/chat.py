@@ -143,9 +143,10 @@ def _fetch_friend_ids(platform: Any, *, page: int, label_id: int, job_id: str | 
 @click.option("--page", default=1, type=int, help="页码")
 @click.option("--job-id", default=None, help="按职位筛选")
 @click.option("--label-id", default=0, type=int, help="按标签筛选（0=全部, 1=新招呼, 2=沟通中）")
+@click.option("--limit", default=None, type=int, help="只显示前 N 个候选人（默认全部，数据量大时可用来只看前几条）")
 @click.pass_context
 @handle_auth_errors("recruiter-chat")
-def recruiter_chat_cmd(ctx: click.Context, page: int, job_id: str | None, label_id: int) -> None:
+def recruiter_chat_cmd(ctx: click.Context, page: int, job_id: str | None, label_id: int, limit: int | None) -> None:
 	"""查看与候选人的沟通列表"""
 	if not require_compliance_allowed(ctx, "recruiter-chat"):
 		return
@@ -162,6 +163,15 @@ def recruiter_chat_cmd(ctx: click.Context, page: int, job_id: str | None, label_
 		data = _friend_data(platform.unwrap_data(result))
 		friend_items = _friend_items(data)
 		friend_ids = _friend_ids_from_items(friend_items)
+		# --limit：数据量大（filterByLabel 一次返回全部）时，只关注前 N 个
+		if limit is not None and limit > 0 and isinstance(data, dict):
+			# 找到真正承载列表的 key（friendList/result/list …），就地截断，保证 handle_output 渲染时生效
+			for key in ("friendList", "result", "list"):
+				if isinstance(data.get(key), list):
+					data[key] = data[key][:limit]
+					break
+			friend_items = _friend_items(data)
+			friend_ids = _friend_ids_from_items(friend_items)
 		if friend_ids:
 			try:
 				last_messages = platform.last_messages(friend_ids)
