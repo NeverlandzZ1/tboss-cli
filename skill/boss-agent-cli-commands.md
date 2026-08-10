@@ -16,11 +16,11 @@
 # 职位列表 → 拿 encryptJobId
 boss --role recruiter hr jobs list
 
-# 沟通中(拿 friendId、name)
+# 沟通中(拿 friendId)
 boss --role recruiter hr chat --label-id 0 --limit <n> --job-id <encryptJobId>
 
-# 推荐牛人(拿 encryptGeekId / securityId / lid / expectId)
-boss --role recruiter hr recommend --job-id <encryptJobId>
+# 推荐牛人(拿 encryptGeekId / securityId / lid / expectId;--limit 控制一次拉几个)
+boss --role recruiter hr recommend --job-id <encryptJobId> --limit <n>
 
 # 直接给推荐牛人打招呼(整套凭证从 recommend 结果里搬)
 boss --role recruiter hr chat-start <encryptGeekId> \
@@ -32,7 +32,7 @@ boss --role recruiter hr chat-start <encryptGeekId> \
 # 用 friendId 反查加密 id(encryptUid / encryptJobId / securityId)
 boss --role recruiter hr friend-detail <friendId>
 
-# 看简历
+# 看在线简历
 boss --role recruiter hr resume <encryptUid> \
     --job-id <encryptJobId> \
     --security-id <securityId>
@@ -55,7 +55,7 @@ boss --role recruiter hr accept-resume <friendId>
 ```bash
 # 1) 推荐流打招呼
 JOB=<encryptJobId>
-boss --role recruiter hr recommend --job-id $JOB
+boss --role recruiter hr recommend --job-id $JOB --limit 5
 # → 从 data.geekList[i].geekCard 拿 encryptGeekId / securityId / lid / expectId
 boss --role recruiter hr chat-start <encGeekId> --job-id $JOB \
     --expect-id <expectId> --lid <lid> --security-id "<securityId>"
@@ -171,6 +171,7 @@ Usage: boss hr candidates [OPTIONS] [QUERY]
 Usage: boss hr recommend [OPTIONS]
   --job-id TEXT                          必填,encryptJobId
   --page INTEGER                         默认 1
+  --limit INTEGER                        只保留前 N 个候选人(默认全部;仅截列表长度,每个人字段完整保留)
   --age / --activation / --school /
   --gender / --recent-not-view /
   --exchange-resume-with-colleague /

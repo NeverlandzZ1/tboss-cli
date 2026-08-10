@@ -1,4 +1,6 @@
 """招聘者 — 每日推荐牛人。"""
+from typing import Any
+
 import click
 
 from boss_agent_cli.auth.manager import AuthManager
@@ -7,9 +9,34 @@ from boss_agent_cli.commands._recruiter_platform import get_recruiter_platform_i
 from boss_agent_cli.display import handle_auth_errors, handle_output, handle_platform_error_output
 
 
+# 按抓包/项目内其他端点习惯优先探测的 key(命中一个就地截断,不进兜底扫描)。
+# 只截列表长度,列表里每个候选人的字段原样保留。
+_KNOWN_LIST_KEYS = ("zpGeekCardVOs", "cardList", "list", "result", "recommendList", "geekList")
+
+
+def _truncate_first_list(data: Any, limit: int) -> bool:
+	"""在 data 里就地截断首个 list-of-dict 字段;截到即返回 True。"""
+	if not isinstance(data, dict):
+		return False
+	for key in _KNOWN_LIST_KEYS:
+		value = data.get(key)
+		if isinstance(value, list):
+			data[key] = value[:limit]
+			return True
+	# 兜底:递归找到首个「list-of-dict」并截断,防止 BOSS 后续改字段名
+	for key, value in data.items():
+		if isinstance(value, list) and value and isinstance(value[0], dict):
+			data[key] = value[:limit]
+			return True
+		if isinstance(value, dict) and _truncate_first_list(value, limit):
+			return True
+	return False
+
+
 @click.command("recommend")
 @click.option("--job-id", required=True, help="职位 encryptJobId（必填，先用 `hr jobs list` 拿）")
 @click.option("--page", default=1, type=int, help="页码（默认 1）")
+@click.option("--limit", default=None, type=int, help="只保留前 N 个候选人（默认全部;仅截列表长度,每个人的字段完整保留）")
 @click.option("--age", default="16,-1", help="年龄范围，默认 16,-1（不限）")
 @click.option("--activation", default="0", help="活跃度筛选（默认 0=不限）")
 @click.option("--school", default="0", help="学校层次（默认 0=不限）")
@@ -31,6 +58,7 @@ def recommend_cmd(
 	ctx: click.Context,
 	job_id: str,
 	page: int,
+	limit: int | None,
 	age: str,
 	activation: str,
 	school: str,
@@ -79,6 +107,9 @@ def recommend_cmd(
 			handle_platform_error_output(ctx, "recruiter-recommend", platform, result, fallback_message="推荐牛人获取失败")
 			return
 		data = platform.unwrap_data(result) or {}
+		# --limit:只截列表长度,不动列表里每个候选人的字段
+		if limit is not None and limit > 0:
+			_truncate_first_list(data, limit)
 		handle_output(
 			ctx, "recruiter-recommend", data,
 			hints={"next_actions": [
