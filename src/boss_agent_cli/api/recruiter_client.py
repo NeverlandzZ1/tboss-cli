@@ -136,17 +136,20 @@ try {
 }
 
 await sleep(args.preConfirmUiWaitMs);
-const confirmed = clickPrimaryConfirm();
-log.push('confirm clicked=' + confirmed);
-if (!confirmed) {
-	return {ok: false, error: args.componentName + ' confirm button not found', log, confirmed, componentName: args.componentName};
+// 改版后求简历/换号可能没有二次确认弹窗,handleExChange() 已经直接发出请求
+// 有弹窗就点掉,没有就跳过;最终成功判定交给 Python 侧的 WS 事件匹配
+const hadConfirm = clickPrimaryConfirm();
+log.push('confirm present=' + hadConfirm);
+if (hadConfirm) {
+	await sleep(args.postConfirmUiWaitMs);
+} else {
+	log.push('no confirm dialog (auto-sent)');
 }
-await sleep(args.postConfirmUiWaitMs);
 return {
 	ok: true,
 	error: null,
 	log,
-	confirmed,
+	confirmed: hadConfirm,
 	componentName: args.componentName,
 };
 """
@@ -755,20 +758,21 @@ class BossRecruiterClient(_BaseHttpClient):
 
 		if isinstance(result, dict) and result.get("ok"):
 			matched_ws = self._matching_chat_send_events(events, [expected_text])
-			if matched_ws:
-				return {
-					"code": 0,
-					"message": "Success",
-					"zpData": {
-						"friendId": friend_id,
-						"exchange_type": exchange_type,
-						"componentName": result.get("componentName"),
-						"confirmed": result.get("confirmed"),
-						"log": result.get("log"),
-						"matched_ws_count": len(matched_ws),
-					},
-				}
-			result.setdefault("error", "no confirmed chat websocket send detected")
+			# handleExChange() 已成功执行;WS 匹配到就是强证据,匹配不到只是弱验证失败
+			# (BOSS 可能改文案/帧格式)。此时仍报成功,但在 zpData 里标 verified=false 供上层判断。
+			return {
+				"code": 0,
+				"message": "Success",
+				"zpData": {
+					"friendId": friend_id,
+					"exchange_type": exchange_type,
+					"componentName": result.get("componentName"),
+					"confirmed": result.get("confirmed"),
+					"log": result.get("log"),
+					"matched_ws_count": len(matched_ws),
+					"verified": bool(matched_ws),
+				},
+			}
 		err = self._page_error_message(result)
 		return {
 			"code": -1,

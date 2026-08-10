@@ -404,8 +404,11 @@ def test_send_message_by_friend_without_real_ws_send_returns_error():
 	client.close()
 
 
-def test_exchange_request_by_friend_without_real_ws_send_returns_error():
-	"""exchange 也必须命中真实 chat WS 帧，DOM 文案不足以判成功。"""
+def test_exchange_request_by_friend_without_real_ws_send_returns_unverified_success():
+	"""改版后没有确认弹窗、也没抓到 chat WS 帧时,仍报成功但 verified=False。
+
+	handleExChange() 已经跑完(BOSS 改版后 UI 直接发送),硬失败反而误报。
+	"""
 	auth = _make_auth()
 	client = BossRecruiterClient(auth)
 	friend_detail_resp = {
@@ -416,16 +419,16 @@ def test_exchange_request_by_friend_without_real_ws_send_returns_error():
 		patch.object(client, "_get_browser") as mock_get_browser:
 		mock_browser = MagicMock()
 		mock_browser.evaluate_js_with_chat_events.return_value = {
-			"value": {"ok": True, "componentName": "ExchangeResume", "confirmed": True, "log": ["handleExChange returned"]},
+			"value": {"ok": True, "componentName": "ExchangeResume", "confirmed": False, "log": ["handleExChange returned"]},
 			"events": [{"kind": "ws_send", "bytes": 156, "utf8_bits": ["/message/suggest", "query"]}],
 		}
 		mock_get_browser.return_value = mock_browser
 
 		result = client.exchange_request_by_friend(1, exchange_type=4)
-		assert result["code"] == -1
-		assert "no confirmed chat websocket send detected" in result["message"]
-		assert result["zpData"]["action"] == "exchange"
-		assert result["zpData"]["ws_evidence"]["matched_ws_count"] == 0
+		assert result["code"] == 0
+		assert result["zpData"]["verified"] is False
+		assert result["zpData"]["matched_ws_count"] == 0
+		assert result["zpData"]["componentName"] == "ExchangeResume"
 	client.close()
 
 
