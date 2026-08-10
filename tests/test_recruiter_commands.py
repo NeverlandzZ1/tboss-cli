@@ -550,6 +550,44 @@ def test_recruiter_request_resume_reports_error_when_platform_rejects(mock_auth_
 	)
 
 
+@patch("boss_agent_cli.commands.recruiter.accept_resume.get_recruiter_platform_instance")
+@patch("boss_agent_cli.commands.recruiter.accept_resume.AuthManager")
+def test_recruiter_accept_resume_success(mock_auth_cls, mock_platform_cls):
+	mock_platform = _ctx_mock(mock_platform_cls)
+	mock_platform.accept_resume_by_friend.return_value = {
+		"code": 0,
+		"zpData": {"friendId": 123, "status": "accepted", "title": "附件简历"},
+	}
+
+	result = _invoke("hr", "accept-resume", "123")
+
+	assert result.exit_code == 0
+	parsed = json.loads(result.output)
+	assert parsed["ok"] is True
+	assert parsed["data"]["friendId"] == 123
+	assert parsed["data"]["status"] == "accepted"
+	mock_platform.accept_resume_by_friend.assert_called_once_with(123)
+
+
+@patch("boss_agent_cli.commands.recruiter.accept_resume.get_recruiter_platform_instance")
+@patch("boss_agent_cli.commands.recruiter.accept_resume.AuthManager")
+def test_recruiter_accept_resume_reports_error(mock_auth_cls, mock_platform_cls):
+	mock_platform = _ctx_mock(mock_platform_cls)
+	mock_platform.accept_resume_by_friend.return_value = {
+		"code": -1,
+		"message": "pending attachment resume card not found",
+	}
+	mock_platform.is_success.return_value = False
+	mock_platform.parse_error.return_value = ("UNKNOWN", "pending attachment resume card not found")
+
+	result = _invoke("hr", "accept-resume", "123")
+
+	assert result.exit_code == 1
+	parsed = json.loads(result.output)
+	assert parsed["ok"] is False
+	assert parsed["error"]["message"] == "pending attachment resume card not found"
+
+
 def test_parse_resume_accepts_data_envelope():
 	result = parse_resume(
 		{

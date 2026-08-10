@@ -258,6 +258,77 @@ def test_exchange_request_by_friend_maps_wechat_to_exchangewx():
 	client.close()
 
 
+def test_accept_resume_by_friend_confirms_page_state():
+	auth = _make_auth()
+	client = BossRecruiterClient(auth)
+	friend_detail_resp = {
+		"code": 0,
+		"zpData": {"friendList": [{
+			"uid": 123, "encryptUid": "u", "encryptJobId": "j",
+			"securityId": "s", "name": "Tester", "friendSource": 0,
+		}]},
+	}
+	with patch.object(client, "_request", return_value=friend_detail_resp), \
+		patch.object(client, "_get_browser") as mock_get_browser:
+		mock_browser = MagicMock()
+		mock_browser.evaluate_js.return_value = {
+			"ok": True,
+			"status": "accepted",
+			"title": "对方想发送附件简历给您，您是否同意",
+			"log": ["geekClick called", "accept resume button clicked"],
+		}
+		mock_get_browser.return_value = mock_browser
+
+		result = client.accept_resume_by_friend(123)
+
+		assert result["code"] == 0
+		assert result["zpData"]["friendId"] == 123
+		assert result["zpData"]["status"] == "accepted"
+		js_arg = mock_browser.evaluate_js.call_args[0][1]
+		assert js_arg["targetFriendId"] == 123
+		assert js_arg["friendData"]["uniqueId"] == "123-0"
+		assert js_arg["postClickUiWaitMs"] == 1000
+	client.close()
+
+
+def test_accept_resume_by_friend_reports_missing_card():
+	auth = _make_auth()
+	client = BossRecruiterClient(auth)
+	friend_detail_resp = {
+		"code": 0,
+		"zpData": {"friendList": [{"uid": 123, "friendSource": 0}]},
+	}
+	with patch.object(client, "_request", return_value=friend_detail_resp), \
+		patch.object(client, "_get_browser") as mock_get_browser:
+		mock_browser = MagicMock()
+		mock_browser.evaluate_js.return_value = {
+			"ok": False,
+			"status": "not_found",
+			"error": "pending attachment resume card not found",
+			"log": ["geekClick called"],
+		}
+		mock_get_browser.return_value = mock_browser
+
+		result = client.accept_resume_by_friend(123)
+
+		assert result["code"] == -1
+		assert "pending attachment resume card not found" in result["message"]
+		assert result["zpData"]["action"] == "accept-resume"
+		assert result["zpData"]["status"] == "not_found"
+	client.close()
+
+
+def test_accept_resume_by_friend_without_friend_returns_error():
+	auth = _make_auth()
+	client = BossRecruiterClient(auth)
+	with patch.object(client, "_request", return_value={"code": 0, "zpData": {"friendList": []}}):
+		result = client.accept_resume_by_friend(999)
+		assert result["code"] == -1
+		assert result["zpData"]["action"] == "accept-resume"
+		assert result["zpData"]["friendId"] == 999
+	client.close()
+
+
 def test_exchange_request_by_friend_page_error_propagated():
 	"""页面侧 Exchange 组件失败时，错误信息进入 CLI 信封。"""
 	auth = _make_auth()

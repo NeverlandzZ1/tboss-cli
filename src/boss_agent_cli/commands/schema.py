@@ -1060,6 +1060,7 @@ SCHEMA_DATA = {
 				"candidates": "受限：搜索候选人",
 				"reply": "受限：回复候选人消息",
 				"request-resume": "受限：请求候选人分享附件简历",
+				"accept-resume": "受限：同意接收候选人发送的附件简历",
 			},
 		},
 	},

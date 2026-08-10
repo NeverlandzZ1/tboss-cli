@@ -175,6 +175,9 @@ class BossRecruiterPlatform(RecruiterPlatform):
 	def exchange_request_by_friend(self, friend_id: int, exchange_type: int) -> dict[str, Any]:
 		return self._client.exchange_request_by_friend(friend_id, exchange_type)
 
+	def accept_resume_by_friend(self, friend_id: int) -> dict[str, Any]:
+		return self._client.accept_resume_by_friend(friend_id)
+
 	def exchange_content(self, uid: int) -> dict[str, Any]:
 		return self._client.exchange_content(uid)
 

@@ -149,6 +149,18 @@ def test_send_message_by_friend_delegates():
 	assert result["code"] == 0
 
 
+def test_accept_resume_by_friend_delegates():
+	client = _mock_client()
+	client.accept_resume_by_friend.return_value = {
+		"code": 0,
+		"zpData": {"friendId": 123, "status": "accepted"},
+	}
+	platform = BossRecruiterPlatform(client)
+	result = platform.accept_resume_by_friend(123)
+	client.accept_resume_by_friend.assert_called_once_with(123)
+	assert result["zpData"]["status"] == "accepted"
+
+
 def test_context_manager_closes():
 	client = _mock_client()
 	with BossRecruiterPlatform(client) as platform:

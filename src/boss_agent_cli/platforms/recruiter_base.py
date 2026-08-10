@@ -180,6 +180,10 @@ class RecruiterPlatform(ABC):
 		"""
 		raise NotImplementedError(f"{self.name} does not implement exchange_request_by_friend")
 
+	def accept_resume_by_friend(self, friend_id: int) -> dict[str, Any]:
+		"""同意候选人发来的附件简历请求。"""
+		raise NotImplementedError(f"{self.name} does not implement accept_resume_by_friend")
+
 	def exchange_content(self, uid: int) -> dict[str, Any]:
 		"""获取交换内容。"""
 		raise NotImplementedError(f"{self.name} does not implement exchange_content")

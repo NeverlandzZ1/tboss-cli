@@ -154,6 +154,48 @@ return {
 _EXCHANGE_COMPONENT_NAMES = {1: "ExchangePhone", 2: "ExchangeWx", 4: "ExchangeResume"}
 _EXCHANGE_MESSAGE_TEXT = {1: "请求交换联系方式", 2: "请求交换联系方式", 4: "方便发一份简历过来吗？"}
 
+_ACCEPT_RESUME_ACTION_JS = """
+const isDisabled = (el) => {
+	const cls = String(el.className || '');
+	if (/disabled|forbid|ban/i.test(cls)) return true;
+	if (el.hasAttribute('disabled')) return true;
+	const style = window.getComputedStyle(el);
+	return style.pointerEvents === 'none' || Number(style.opacity) < 0.35;
+};
+const findLatestResumeCard = () => {
+	const items = Array.from(document.querySelectorAll('.chat-message-list .message-item'));
+	for (let index = items.length - 1; index >= 0; index -= 1) {
+		const incoming = items[index].querySelector('.item-friend');
+		if (!incoming) continue;
+		const title = squashText(incoming.querySelector('.message-card-top-title')?.textContent || '');
+		if (!title.includes('附件简历')) continue;
+		const buttons = Array.from(incoming.querySelectorAll('.message-card-buttons .card-btn'));
+		const agreeButton = buttons.find((button) => squashText(button.textContent || '').startsWith('同意'));
+		if (agreeButton) return {card: incoming, agreeButton, title};
+	}
+	return null;
+};
+
+const target = findLatestResumeCard();
+if (!target) {
+	return {ok: false, error: 'pending attachment resume card not found', status: 'not_found', log};
+}
+if (isDisabled(target.agreeButton)) {
+	return {ok: true, status: 'already_handled', title: target.title, log};
+}
+
+target.agreeButton.scrollIntoView({block: 'center', inline: 'nearest'});
+target.agreeButton.click();
+log.push('accept resume button clicked');
+await sleep(args.postClickUiWaitMs);
+
+const after = findLatestResumeCard();
+if (!after || isDisabled(after.agreeButton)) {
+	return {ok: true, status: 'accepted', title: target.title, log};
+}
+return {ok: false, error: 'accept resume click was not confirmed by page state', status: 'unconfirmed', log};
+"""
+
 
 atexit.register(_close_open_clients)
 
@@ -739,6 +781,60 @@ class BossRecruiterClient(_BaseHttpClient):
 				result=result,
 				events=events,
 				extra={"exchange_type": exchange_type, "componentName": component_name},
+			),
+		}
+
+	def accept_resume_by_friend(self, friend_id: int) -> dict[str, Any]:
+		"""同意候选人发来的附件简历请求。
+
+		通过 ``friend_detail`` 和聊天页 ``geekClick`` 精确切换到目标会话，
+		定位最新的候选人侧“附件简历”确认卡片并点击“同意”。点击后必须看到
+		卡片消失或同意按钮变为 disabled，才报告成功。
+		"""
+		try:
+			friend_data = self._require_chat_friend_data(friend_id)
+		except LookupError as exc:
+			return {
+				"code": -1,
+				"message": str(exc),
+				"zpData": self._chat_action_failure_data(
+					action="accept-resume",
+					friend_id=friend_id,
+					error=str(exc),
+					expected_bits=[],
+				),
+			}
+
+		result, _events = self._run_chat_frontend_action(
+			friend_data=friend_data,
+			action_js=_ACCEPT_RESUME_ACTION_JS,
+			require_security_id=False,
+			settle_ms=800,
+			extra_args={"postClickUiWaitMs": 1000},
+		)
+		if isinstance(result, dict) and result.get("ok"):
+			return {
+				"code": 0,
+				"message": "Success",
+				"zpData": {
+					"friendId": friend_id,
+					"status": result.get("status"),
+					"title": result.get("title"),
+					"log": result.get("log", []),
+				},
+			}
+
+		err = self._page_error_message(result)
+		return {
+			"code": -1,
+			"message": f"accept_resume_by_friend failed: {err}",
+			"zpData": self._chat_action_failure_data(
+				action="accept-resume",
+				friend_id=friend_id,
+				error=err,
+				expected_bits=[],
+				result=result,
+				extra={"status": result.get("status") if isinstance(result, dict) else None},
 			),
 		}
 
