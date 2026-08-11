@@ -199,6 +199,11 @@ Usage: boss hr chat-start ENCRYPT_GEEK_ID [OPTIONS]
 - 端点:`POST /wapi/zpjob/chat/start`
 - 四个凭证都从同一次 `hr recommend` 响应里搬,别混搭不同批次
 - 成功后候选人会进入 `hr chat` 列表
+- **业务级失败判定**(BOSS 侧坑点):HTTP 200 + `code:0` 不代表招呼真的送出去了。
+  - 真送出:`zpData.newfriend=1, status=1|0, greeting=<招呼语>`
+  - 未真送出:`zpData.newfriend=0, status=3, greeting=null` — 命中就报 `GREET_LIMIT` 错误码
+  - 常见原因:①今日打招呼额度用完 ②候选人已在沟通列表 ③职位受风控
+  - `details` 里会透传 `friend_id / newfriend / status / greeting` 供上层判断
 
 ### `hr resume <encryptUid>` — 看候选人简历
 
