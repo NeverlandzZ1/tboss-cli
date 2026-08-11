@@ -4,7 +4,12 @@ import click
 from boss_agent_cli.auth.manager import AuthManager
 from boss_agent_cli.compliance import require_compliance_allowed
 from boss_agent_cli.commands._recruiter_platform import get_recruiter_platform_instance
-from boss_agent_cli.display import handle_auth_errors, handle_output, handle_platform_error_output
+from boss_agent_cli.display import (
+	handle_auth_errors,
+	handle_error_output,
+	handle_output,
+	handle_platform_error_output,
+)
 
 
 @click.command("chat-start")
@@ -51,11 +56,39 @@ def chat_start_cmd(
 			return
 		zp_data = platform.unwrap_data(result) or {}
 		friend_id = zp_data.get("geekId")
+		newfriend = zp_data.get("newfriend")
+		status = zp_data.get("status")
+		greeting = zp_data.get("greeting")
+
+		# BOSS 的 /wapi/zpjob/chat/start 有个坑:HTTP 200 + code:0 只代表接口调用成功,
+		# 不代表"招呼真的送出去了"。真源(抓包实证):
+		#   - 成功送出:  newfriend=1, status=1|0, greeting=<招呼语>
+		#   - 未真正送出:newfriend=0, status=3,   greeting=null
+		# 后者常见于三种业务失败:①今日打招呼额度用光 ②候选人已在沟通列表 ③职位被风控。
+		greet_sent = greeting is not None and newfriend == 1
+		if not greet_sent:
+			handle_error_output(
+				ctx, "recruiter-chat-start",
+				code="GREET_LIMIT",
+				message=(
+					"chat-start 接口返回成功但招呼未真正送出(newfriend={nf}, status={st}, "
+					"greeting=null),常见原因:今日打招呼额度用完 / 已在沟通列表 / 职位受限"
+				).format(nf=newfriend, st=status),
+				recoverable=False,
+				details={
+					"friend_id": friend_id,
+					"newfriend": newfriend,
+					"status": status,
+					"greeting": greeting,
+				},
+			)
+			return
+
 		data = {
 			"friend_id": friend_id,
-			"newfriend": zp_data.get("newfriend"),
-			"status": zp_data.get("status"),
-			"greeting": zp_data.get("greeting"),
+			"newfriend": newfriend,
+			"status": status,
+			"greeting": greeting,
 		}
 		handle_output(
 			ctx, "recruiter-chat-start", data,
