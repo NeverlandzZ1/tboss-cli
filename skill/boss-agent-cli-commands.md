@@ -1,10 +1,12 @@
-# boss-agent-cli HR 端命令速查
+# tboss-cli HR 端命令速查
 
-只覆盖招聘者(HR)一侧。三层结构:
+只覆盖招聘者(HR)一侧。tboss-cli 是基于上游 `boss-agent-cli` 的 fork(https://github.com/NeverlandzZ1/tboss-cli.git),命令入口仍然是 `boss`,主要在 HR 侧新增/修复了 `hr accept-resume` / `hr chat-start` / `hr friend-detail` / `hr request-resume` 等命令,其余命令与上游保持一致。
+
+三层结构:
 
 - **第一层**:常用命令 + 已确定的入参形态,复制即用
 - **第二层**:全部 HR 命令的完整参数 + 响应关键字段
-- **第三层**:任何人第一次用都得走一遍的环境准备命令
+- **第三层**:任何人第一次用都得走一遍的环境准备命令(含安装)
 
 所有 HR 命令都必须加 `--role recruiter`(或在 config 里默认设招聘者)。
 
@@ -268,6 +270,16 @@ Usage: boss hr jobs detail  ENC_JOB_ID
 按顺序执行一次即可。
 
 ```bash
+# 0) 安装 tboss-cli(命令入口仍是 boss)
+#    推荐 uv
+uv tool install git+https://github.com/NeverlandzZ1/tboss-cli.git
+#    备选 pipx
+pipx install git+https://github.com/NeverlandzZ1/tboss-cli.git
+
+#    升级 / 卸载
+uv tool upgrade tboss-cli
+uv tool uninstall tboss-cli
+
 # 1) 环境体检 — 检查依赖、Chrome/CDP、cookie 提取能力
 boss doctor
 
