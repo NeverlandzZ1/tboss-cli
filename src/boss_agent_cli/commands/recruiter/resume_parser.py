@@ -74,9 +74,9 @@ def _parse_education(info: dict[str, Any]) -> list[dict[str, Any]]:
 		result.append({
 			"school": e.get("school", ""),
 			"major": e.get("major", ""),
-			"degree": e.get("degreeDesc", ""),
-			"start": e.get("startYearMonStr", ""),
-			"end": e.get("endYearMonStr", ""),
+			"degree": e.get("degreeDesc") or e.get("degreeName", ""),
+			"start": e.get("startYearMonStr") or e.get("startDateDesc", ""),
+			"end": e.get("endYearMonStr") or e.get("endDateDesc", ""),
 		})
 	return result
 
@@ -105,11 +105,11 @@ def parse_resume(raw: dict[str, Any]) -> dict[str, Any]:
 	payload = raw.get("zpData") if "zpData" in raw else raw.get("data", raw)
 	if not isinstance(payload, dict):
 		payload = {}
-	info = payload.get("geekDetailInfo", {})
+	info = payload.get("geekDetailInfo") or {}
 
 	certs = [_safe_str(c.get("certName")) for c in info.get("geekCertificationList", []) if c.get("certName")]
 
-	return {
+	result = {
 		"basic": _parse_base(info),
 		"expectation": _parse_expect(info),
 		"work_experience": _parse_works(info),
@@ -118,3 +118,10 @@ def parse_resume(raw: dict[str, Any]) -> dict[str, Any]:
 		"competitive_analysis": _parse_competitive(info),
 		"certifications": certs,
 	}
+	if "renderedText" in info:
+		result["rendered_text"] = info["renderedText"]
+	if "renderedSections" in info:
+		result["rendered_sections"] = info["renderedSections"]
+	if "capture" in payload:
+		result["capture"] = payload["capture"]
+	return result

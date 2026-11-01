@@ -89,8 +89,8 @@ endpoints:
     referer: "/web/frame/recommend/"
   boss_view_geek:
     method: GET
-    path: "/wapi/zpjob/view/geek/info"
-    referer: "/web/chat/index"
+    path: "/wapi/zpjob/view/geek/info/v2"
+    referer: "/web/frame/c-resume/?source=chat-resume-online"
   boss_chat_geek_info:
     method: GET
     path: "/wapi/zpjob/chat/geek/info"

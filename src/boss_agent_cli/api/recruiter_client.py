@@ -11,6 +11,8 @@ from typing import Any, cast
 from boss_agent_cli.api import recruiter_endpoints as ep
 from boss_agent_cli.api._base_client import _BaseHttpClient
 from boss_agent_cli.api.httpx_helpers import make_client_registry
+from boss_agent_cli.api.resume_canvas import enrich_canvas_resume
+from boss_agent_cli.api.resume_canvas_script import ONLINE_RESUME_JS as _ONLINE_RESUME_ACTION_JS
 
 _OPEN_CLIENTS, _close_open_clients = make_client_registry()
 
@@ -198,6 +200,8 @@ if (!after || isDisabled(after.agreeButton)) {
 }
 return {ok: false, error: 'accept resume click was not confirmed by page state', status: 'unconfirmed', log};
 """
+
+
 
 
 atexit.register(_close_open_clients)
@@ -550,10 +554,65 @@ class BossRecruiterClient(_BaseHttpClient):
 		)
 
 	def view_geek(self, geek_id: str, job_id: str, security_id: str | None = None) -> dict[str, Any]:
-		params: dict[str, Any] = {"encryptGeekId": geek_id, "encryptJobId": job_id}
-		if security_id:
-			params["securityId"] = security_id
-		return self._request("GET", ep.BOSS_VIEW_GEEK_URL, params=params)
+		"""Fetch and decrypt the current online resume through BOSS's v2 WASM flow.
+
+		The retired v1 endpoint accepted ``encryptGeekId``/``encryptJobId`` directly.
+		The v2 page first refreshes candidate context through ``chat/geek/info``, then
+		loads a signed challenge and decrypts ``encryptGeekDetailInfo`` inside the
+		BOSS resume iframe. Reusing that official iframe flow keeps the CLI output
+		compatible with the existing parser without embedding BOSS's rotating WASM.
+		"""
+		if not security_id:
+			return {"code": -1, "message": "缺少 securityId", "zpData": {}}
+
+		context = self._request(
+			"GET",
+			ep.BOSS_CHAT_GEEK_INFO_URL,
+			params={"encryptGeekId": geek_id, "securityId": security_id, "jobId": job_id},
+		)
+		if context.get("code") != 0:
+			return context
+
+		context_data = (context.get("zpData") or {}).get("data") or {}
+		fresh_security_id = context_data.get("securityId")
+		if not fresh_security_id:
+			return {
+				"code": -1,
+				"message": "chat/geek/info 未返回新版简历所需的 securityId",
+				"zpData": {},
+			}
+
+		result = self._get_browser().evaluate_js(
+			_ONLINE_RESUME_ACTION_JS,
+			{
+				"encryptUid": geek_id,
+				"encryptJobId": job_id,
+				"securityId": fresh_security_id,
+				"encryptExpectId": context_data.get("encryptExpectId"),
+				"expectId": context_data.get("expectId"),
+				"uid": context_data.get("uid"),
+				"jobId": context_data.get("jobId"),
+				"timeoutMs": 25000,
+			},
+			maintain_rendering=True,
+		)
+		if not isinstance(result, dict) or not result.get("ok"):
+			message = result.get("error") if isinstance(result, dict) else "在线简历 WASM 返回格式异常"
+			return {"code": -1, "message": message or "在线简历 WASM 解密失败", "zpData": {}}
+
+		abstract_data = ((result.get("data") or {}).get("abstractData") or {})
+		if not isinstance(abstract_data, dict) or not abstract_data:
+			return {"code": -1, "message": "在线简历 WASM 未返回可解析数据", "zpData": {}}
+
+		info, capture = enrich_canvas_resume(abstract_data, result.get("canvas") or {})
+		if not info.get("renderedText"):
+			return {"code": -1, "message": "未采集到简历正文，请检查登录态或页面版本", "zpData": {}}
+		return {
+			"code": 0,
+			"message": "Success",
+			"zpData": {"geekDetailInfo": info, "capture": capture},
+			"__cli_endpoint_hint__": ep.BOSS_VIEW_GEEK_URL,
+		}
 
 	def chat_geek_info(self, geek_id: str, security_id: str, job_id: int) -> dict[str, Any]:
 		params = {"encryptGeekId": geek_id, "securityId": security_id, "jobId": job_id}

@@ -382,7 +382,7 @@ class BrowserSession:
 
 	# ── Arbitrary JS evaluation (CDP-only, raw websocket) ────────────
 
-	def evaluate_js(self, script: str, arg: Any = None) -> Any:
+	def evaluate_js(self, script: str, arg: Any = None, *, maintain_rendering: bool = False) -> Any:
 		"""Run JS in the user's recruiter chat tab via raw CDP websocket.
 
 		Required for recruiter send_message (issue #217): we reach into the
@@ -410,7 +410,7 @@ class BrowserSession:
 		if self._is_bridge:
 			raise RuntimeError("evaluate_js requires CDP mode (bridge mode has no access to user Chrome)")
 		cdp_url = self._cdp_url or CDP_DEFAULT_URL
-		return _cdp_evaluate_in_chat_tab(cdp_url, script, arg)
+		return _cdp_evaluate_in_chat_tab(cdp_url, script, arg, maintain_rendering=maintain_rendering)
 
 	def evaluate_js_with_chat_events(self, script: str, arg: Any = None, *, listen_ms: int = 3000) -> dict[str, Any]:
 		"""Run JS in the recruiter chat tab and collect short-lived chat WS events.
@@ -528,7 +528,7 @@ def _carve_utf8_bits(bs: bytes) -> list[str]:
 	return out
 
 
-def _cdp_evaluate_in_chat_tab(cdp_http_url: str, script: str, arg: Any) -> Any:
+def _cdp_evaluate_in_chat_tab(cdp_http_url: str, script: str, arg: Any, *, maintain_rendering: bool = False) -> Any:
 	"""Send Runtime.evaluate to the BOSS recruiter chat tab via raw CDP.
 
 	Bypasses patchright entirely — avoids 'Frame was detached' errors when
@@ -545,39 +545,71 @@ def _cdp_evaluate_in_chat_tab(cdp_http_url: str, script: str, arg: Any) -> Any:
 	expression = _build_eval_expression(script, arg)
 
 	with _ws_client.connect(target_ws, max_size=8 * 1024 * 1024) as ws:
-		ws.send(
-			_json.dumps(
-				{
-					"id": 1,
-					"method": "Runtime.evaluate",
-					"params": {
-						"expression": expression,
-						"returnByValue": True,
-						"awaitPromise": True,
-					},
-				}
-			)
-		)
-		deadline = time.time() + 30.0
-		while time.time() < deadline:
-			raw = ws.recv(timeout=max(0.1, deadline - time.time()))
-			msg = _json.loads(raw)
-			if msg.get("id") != 1:
-				continue
-			err = msg.get("error")
-			if err:
-				raise RuntimeError(f"CDP Runtime.evaluate error: {err}")
-			result = msg.get("result", {}).get("result", {})
-			if "value" in result:
-				return result["value"]
-			# Exception in JS side
-			exc_details = msg.get("result", {}).get("exceptionDetails")
-			if exc_details:
-				raise RuntimeError(
-					f"JS exception: {exc_details.get('text')} — {exc_details.get('exception', {}).get('description', '')[:300]}"
+
+		def set_focus(enabled: bool, message_id: int) -> None:
+			ws.send(
+				_json.dumps(
+					{
+						"id": message_id,
+						"method": "Emulation.setFocusEmulationEnabled",
+						"params": {"enabled": enabled},
+					}
 				)
-			return result
-		raise RuntimeError("CDP Runtime.evaluate timed out after 30s")
+			)
+			deadline = time.time() + 5.0
+			while time.time() < deadline:
+				message = _json.loads(ws.recv(timeout=max(0.1, deadline - time.time())))
+				if message.get("id") != message_id:
+					continue
+				if message.get("error"):
+					raise RuntimeError(f"CDP focus emulation failed: {message['error']}")
+				return
+			raise RuntimeError("CDP focus emulation timed out")
+
+		# Session-scoped focus emulation keeps rAF/canvas rendering alive without
+		# activating the tab or restoring/moving the user's browser window.
+		try:
+			if maintain_rendering:
+				set_focus(True, 2)
+			ws.send(
+				_json.dumps(
+					{
+						"id": 1,
+						"method": "Runtime.evaluate",
+						"params": {
+							"expression": expression,
+							"returnByValue": True,
+							"awaitPromise": True,
+						},
+					}
+				)
+			)
+			deadline = time.time() + 30.0
+			while time.time() < deadline:
+				raw = ws.recv(timeout=max(0.1, deadline - time.time()))
+				msg = _json.loads(raw)
+				if msg.get("id") != 1:
+					continue
+				err = msg.get("error")
+				if err:
+					raise RuntimeError(f"CDP Runtime.evaluate error: {err}")
+				result = msg.get("result", {}).get("result", {})
+				if "value" in result:
+					return result["value"]
+				# Exception in JS side
+				exc_details = msg.get("result", {}).get("exceptionDetails")
+				if exc_details:
+					raise RuntimeError(
+						f"JS exception: {exc_details.get('text')} — {exc_details.get('exception', {}).get('description', '')[:300]}"
+					)
+				return result
+			raise RuntimeError("CDP Runtime.evaluate timed out after 30s")
+		finally:
+			if maintain_rendering:
+				try:
+					set_focus(False, 3)
+				finally:
+					ws.close()
 
 
 def _cdp_evaluate_with_chat_events_in_chat_tab(

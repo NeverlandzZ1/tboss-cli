@@ -17,7 +17,7 @@ from boss_agent_cli.display import handle_auth_errors, handle_error_output, hand
 @click.option("--uid", default=None, type=int, help="候选人 uid（交换联系方式时需要）")
 @click.option("--gid", default=None, type=int, help="会话 gid（交换联系方式时需要）")
 @click.option("--friend-id", default=None, type=int, help="候选人 friendId（交换联系方式新路径; issue #217）")
-@click.option("--raw", "show_raw", is_flag=True, default=False, help="输出原始 API 数据（不解析）")
+@click.option("--raw", "show_raw", is_flag=True, default=False, help="输出未归一化采集数据（在线简历为摘要+Canvas文字，并非原始HTTP响应）")
 @click.pass_context
 @handle_auth_errors("recruiter-resume")
 def resume_cmd(ctx: click.Context, geek_id: str | None, job_id: str, security_id: str | None, exchange_contact: bool, exchange_type: str, uid: int | None, gid: int | None, friend_id: int | None, show_raw: bool) -> None:

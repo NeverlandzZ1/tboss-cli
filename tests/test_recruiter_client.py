@@ -124,17 +124,18 @@ def test_search_geeks_filter_params_city_defaults_to_nationwide():
 	client.close()
 
 
-def test_view_geek_calls_get():
+def test_view_geek_rejects_context_without_security_id():
 	auth = _make_auth()
 	client = BossRecruiterClient(auth)
 	mock_result = {"code": 0, "zpData": {"name": "张三"}}
 	with patch.object(client, "_request", return_value=mock_result) as mock_req:
 		result = client.view_geek("g1", "j1", security_id="s1")
 		mock_req.assert_called_once_with(
-			"GET", ep.BOSS_VIEW_GEEK_URL,
-			params={"encryptGeekId": "g1", "encryptJobId": "j1", "securityId": "s1"},
+			"GET", ep.BOSS_CHAT_GEEK_INFO_URL,
+			params={"encryptGeekId": "g1", "jobId": "j1", "securityId": "s1"},
 		)
-		assert result == mock_result
+		assert result["code"] == -1
+		assert "securityId" in result["message"]
 	client.close()
 
 
