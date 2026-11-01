@@ -1,0 +1,68 @@
+src/boss_agent_cli/api/recruiter_client.py
+  s_fe4e8ef33735df::t_00fd5a868ff6e7 14,607-613
+  s_fe4e8ef33735df::t_7ddc10fc9c7831 557-594,599-606,614-615
+  s_fe4e8ef33735df::t_5925fc352d7784 595-598
+  s_fe4e8ef33735df::t_f8befed60f62cc 15
+  s_fe4e8ef33735df::t_70437aacee5b5a 205-206
+src/boss_agent_cli/commands/recruiter/resume.py
+  s_fe4e8ef33735df::t_00fd5a868ff6e7 20
+src/boss_agent_cli/commands/recruiter/resume_parser.py
+  s_fe4e8ef33735df::t_7ddc10fc9c7831 77-79
+  s_fe4e8ef33735df::t_df40612d151e2c 123-124
+  s_fe4e8ef33735df::t_00fd5a868ff6e7 108,112,121-122,125-127
+src/boss_agent_cli/api/resume_canvas_script.py
+  s_fe4e8ef33735df::t_df40612d151e2c 29-32
+  s_fe4e8ef33735df::t_422b279704224c 16-27,47,108-109,126-133,142
+  s_fe4e8ef33735df::t_f8befed60f62cc 89-90
+  s_fe4e8ef33735df::t_f11bbe118a4f94 1-15,28,33-46,48-88,91-107,110-125,134-141,143-162
+src/boss_agent_cli/api/resume_canvas.py
+  s_fe4e8ef33735df::t_422b279704224c 50-53,149
+  s_fe4e8ef33735df::t_df40612d151e2c 17,45-49,54-55,95-138,141,145-148
+  s_fe4e8ef33735df::t_ced6ab5b64d43a 75-77
+  s_fe4e8ef33735df::t_00fd5a868ff6e7 1-16,18-44,56-74,78-94,139-140,142-144,150
+tests/test_resume_canvas_browser.py
+  s_fe4e8ef33735df::t_422b279704224c 12,40-41,51,60,79-82
+  s_fe4e8ef33735df::t_0afa3f62bf2212 1-11,13-39,42-50,52-59,61-78,83-84
+src/boss_agent_cli/api/browser_client.py
+  s_fe4e8ef33735df::t_1547c275700d87 385,413
+  s_fe4e8ef33735df::t_4b409e8d596dab 531,548,550-557
+  s_fe4e8ef33735df::t_ebb5c2e044db96 549,559-584,586-606
+  s_fe4e8ef33735df::t_33bd61593d16e9 607-612
+src/boss_agent_cli/api/recruiter.yaml
+  s_fe4e8ef33735df::t_70437aacee5b5a 92-93
+tests/test_recruiter_resume_v2.py
+  s_fe4e8ef33735df::t_185e0c1ee746b2 1-37,39-53,55-67,69-113
+  s_fe4e8ef33735df::t_598b7c0a64d8a8 38,68,114-158
+  s_fe4e8ef33735df::t_ae44cdbe5b57dd 159-170
+  s_fe4e8ef33735df::t_422b279704224c 182
+  s_fe4e8ef33735df::t_0afa3f62bf2212 171-181,183-189
+  s_fe4e8ef33735df::t_19e90bde7315e3 54
+tests/test_recruiter_client.py
+  s_fe4e8ef33735df::t_ae44cdbe5b57dd 127,134-135,137-138
+docs/online-resume-canvas.md
+  s_fe4e8ef33735df::t_8a3051be12f922 19-21,54-56
+  s_fe4e8ef33735df::t_d27f930c3a3f3a 57-61
+  s_fe4e8ef33735df::t_89fdb0aa47c92b 5-9,62-68
+  s_fe4e8ef33735df::t_2364a29131f564 16-18,26-27,29,31-36,42-45,47-53
+  s_fe4e8ef33735df::t_d8dd7cdf1fe172 69-70
+  s_fe4e8ef33735df::t_ced6ab5b64d43a 1-4,10-15,22-25,28,30,37-41,46
+tests/test_resume_cdp_focus.py
+  s_fe4e8ef33735df::t_19e90bde7315e3 1-8,10-12,14-15,17-18,20,30-31,36-38,40,48-52,58
+  s_fe4e8ef33735df::t_4b409e8d596dab 9,13,16,19,21-29,32-35,39,41-47,53-57,59-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "d071dc6795856cf60e75a3fa3567eaf186906eb5",
+  "prompts": {},
+  "sessions": {
+    "s_fe4e8ef33735df": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17e0d-6ae1-7750-8a3c-50283413546b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Jingbo Ma （马靖博） <jingboma@trip.com>"
+    }
+  }
+}
