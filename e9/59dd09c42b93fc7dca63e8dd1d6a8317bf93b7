@@ -1,0 +1,57 @@
+README.md
+  s_fe4e8ef33735df::t_ac66ce88b66a79 39-42
+  s_fe4e8ef33735df::t_1e6521cc77cd49 7,14,20-21,27,31-33
+skill/boss-agent-cli-commands.md
+  s_fe4e8ef33735df::t_a9d718a2ed4e31 231
+  s_fe4e8ef33735df::t_ac66ce88b66a79 221-224,227-230,232
+src/boss_agent_cli/api/resume_canvas_script.py
+  s_fe4e8ef33735df::t_a30d9164720834 9-10,153-156,158-162
+src/boss_agent_cli/platforms/zhipin_recruiter.py
+  s_fe4e8ef33735df::t_6c3a2e105db76b 113-127
+docs/online-resume-canvas.md
+  s_fe4e8ef33735df::t_a9d718a2ed4e31 61-64
+  s_fe4e8ef33735df::t_ac66ce88b66a79 14-35
+  s_fe4e8ef33735df::t_1689579ec3d0a0 97-104
+tests/test_resume_cdp_focus.py
+  s_fe4e8ef33735df::t_f3547d0618b084 7
+  s_fe4e8ef33735df::t_e05a460e68f3d8 1,8-11,15-20
+  s_fe4e8ef33735df::t_6c3a2e105db76b 12-14
+README.en.md
+  s_fe4e8ef33735df::t_868f6cd1884749 229-230
+  s_fe4e8ef33735df::t_1e6521cc77cd49 231-239
+src/boss_agent_cli/api/recruiter_client.py
+  s_fe4e8ef33735df::t_6c3a2e105db76b 295,317-319,555-564,568-570,578-602,615,623,756-758
+src/boss_agent_cli/main.py
+  s_fe4e8ef33735df::t_5c24ea4fbd57c1 4,27-31
+src/boss_agent_cli/api/browser_client.py
+  s_fe4e8ef33735df::t_d8bc2f22b3a43f 486,502-504,510-511,554
+  s_fe4e8ef33735df::t_6c3a2e105db76b 505-509
+tests/test_cli_utf8.py
+  s_fe4e8ef33735df::t_97c2ced51af95a 1-23
+src/boss_agent_cli/commands/recruiter/resume.py
+  s_fe4e8ef33735df::t_6c3a2e105db76b 2,16-23,25-31,35-41,44-58,73-74,83-85,90-104,106-108,113-114,122-129
+tests/test_recruiter_resume_v2.py
+  s_fe4e8ef33735df::t_1b0950b1f32d14 13-16,22-42
+  s_fe4e8ef33735df::t_6c3a2e105db76b 17-21,164-174,191-198,220-247
+src/boss_agent_cli/platforms/recruiter_base.py
+  s_fe4e8ef33735df::t_6c3a2e105db76b 88-103,107-116
+tests/test_resume_canvas_browser.py
+  s_fe4e8ef33735df::t_6c3a2e105db76b 2,12-24,79-81,99-107
+  s_fe4e8ef33735df::t_1b0950b1f32d14 31,57,72-73,76,91,97-98,108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "e959dd09c42b93fc7dca63e8dd1d6a8317bf93b7",
+  "prompts": {},
+  "sessions": {
+    "s_fe4e8ef33735df": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17e0d-6ae1-7750-8a3c-50283413546b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Jingbo Ma （马靖博） <jingboma@trip.com>"
+    }
+  }
+}
