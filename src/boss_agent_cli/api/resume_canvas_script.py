@@ -6,7 +6,8 @@ async (args) => {
  Object.assign(wrapper.style, {position:'fixed', left:'-10000px', top:'0',
   width:'730px', height:'800px', overflowY:'auto', pointerEvents:'none'});
  const frame = document.createElement('iframe');
- frame.src = '/web/frame/c-resume/?source=chat-resume-online';
+ const recommended=args.resumeSource==='recommend';
+ frame.src = '/web/frame/c-resume/?source='+(recommended?'recommend':'chat-resume-online');
  Object.assign(frame.style, {display:'block', width:'100%', height:'1200px', border:'0'});
  frame.setAttribute('aria-hidden','true');
  const connectionId = `boss-canvas-${Date.now()}-${Math.random()}`;
@@ -149,11 +150,16 @@ async (args) => {
    try{
     if(frame.contentWindow.location.origin!==location.origin)throw new Error('origin');
     install(frame.contentWindow);
-    frame.contentWindow.postMessage({type:'SET_RESUME',connectionId,data:{requestParams:{
+    const requestParams=recommended?{
+     encryptJid:args.encryptJobId,expectId:args.expectId,securityId:args.securityId,
+     lid:args.lid,entrance:0,wayType:0,sourceType:3
+    }:{
      encryptJid:args.encryptJobId,securityId:args.securityId,encryptExpectId:args.encryptExpectId,
-     expectId:args.expectId,scene:0,source:1,uid:args.encryptUid},dataSourceParams:{
-     encryptJobId:args.encryptJobId,resumeSource:'chat-resume-online',encryptGeekId:args.encryptUid,
-     geekId:args.uid,jobId:args.jobId,lid:''}}},location.origin);
+     expectId:args.expectId,scene:0,source:1,uid:args.encryptUid};
+    frame.contentWindow.postMessage({type:'SET_RESUME',connectionId,data:{requestParams,dataSourceParams:{
+     encryptJobId:args.encryptJobId,resumeSource:recommended?'recommend-resume':'chat-resume-online',encryptGeekId:args.encryptUid,
+     geekId:args.uid,jobId:args.jobId,lid:recommended?args.lid:'',
+     ...(recommended?{isPreview:false,scrollCheckEnable:false,singleViewer:false}: {})}}},location.origin);
    }catch(_){finish('online resume frame unavailable; check login/security verification');}
   },{once:true});
   wrapper.appendChild(frame);document.body.appendChild(wrapper);

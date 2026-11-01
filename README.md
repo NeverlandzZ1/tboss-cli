@@ -4,37 +4,42 @@
 
 ## 使用方法
 
-命令用法、参数、示例、Agent 集成等详细文档,请查看上游项目:
+本分支 HR 命令以 [本地命令契约](skill/boss-agent-cli-commands.md) 为准；通用背景可查看上游项目:
 
 👉 [can4hou6joeng4/boss-agent-cli](https://github.com/can4hou6joeng4/boss-agent-cli)
 
 ## 安装
 
 ```bash
-uv tool install git+https://github.com/NeverlandzZ1/tboss-cli.git
+uv tool install --force --refresh git+https://github.com/NeverlandzZ1/tboss-cli.git
 ```
 
 安装完成后:
 
 ```bash
-boss --role recruiter login          # 首次登录
-boss --role recruiter hr jobs list   # 验证可用
+boss --cdp-url http://localhost:9222 --role recruiter login --cdp  # 绑定已登录 Chrome
+boss --cdp-url http://localhost:9222 --role recruiter hr jobs list # 验证可用
 ```
 
 升级 / 卸载:
 
 ```bash
-uv tool upgrade tboss-cli
+uv tool install --force --refresh git+https://github.com/NeverlandzZ1/tboss-cli.git
 uv tool uninstall tboss-cli
 ```
 
-> 没装 uv 的话,`pipx install git+https://github.com/NeverlandzZ1/tboss-cli.git` 也行。
+配置 Skill 统一使用 `install_cli.py` 解析最新 Git HEAD 并验证安装提交、实际可执行路径
+和新版简历参数，不以版本号相同跳过更新。开发中的本地改动需先发布到此 Git 源，
+再更新全局安装；`uv run boss` 仅用于本地开发验证。
 
 ## 命令速查
 
 HR 端常用命令、参数、返回字段速查见:
 
-👉 [skill/boss-cli-commands.md](skill/boss-cli-commands.md)
+👉 [skill/boss-agent-cli-commands.md](skill/boss-agent-cli-commands.md)
+
+新版在线简历支持 chat / recommend 来源，参数、Canvas 采集与后台窗口支持见
+[在线简历文档](docs/online-resume-canvas.md)。推荐来源在筛选前即可查看，无需先首招。
 
 ## License
 

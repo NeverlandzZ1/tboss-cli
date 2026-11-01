@@ -110,8 +110,21 @@ class BossRecruiterPlatform(RecruiterPlatform):
 			salary=salary,
 		)
 
-	def view_geek(self, geek_id: str, job_id: str, security_id: str | None = None) -> dict[str, Any]:
-		return self._client.view_geek(geek_id, job_id=job_id, security_id=security_id)
+	def view_geek(
+		self,
+		geek_id: str,
+		job_id: str,
+		security_id: str | None = None,
+		*,
+		source: str = "chat",
+		expect_id: int | None = None,
+		lid: str | None = None,
+	) -> dict[str, Any]:
+		if source == "chat":
+			return self._client.view_geek(geek_id, job_id=job_id, security_id=security_id)
+		return self._client.view_geek(
+			geek_id, job_id=job_id, security_id=security_id, source=source, expect_id=expect_id, lid=lid
+		)
 
 	def recommend_geeks(self, job_id: str, *, page: int = 1, **filters: Any) -> dict[str, Any]:
 		return self._client.recommend_geeks(job_id, page=page, **filters)

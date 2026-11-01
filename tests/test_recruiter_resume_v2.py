@@ -10,6 +10,36 @@ class FakeAuthManager:
 		return {"cookies": {}, "user_agent": "test-agent"}
 
 
+def test_recommend_resume_uses_card_credentials_without_chat_refresh():
+	client = BossRecruiterClient(FakeAuthManager())
+	client._request = Mock(side_effect=AssertionError("must not refresh chat context"))
+	browser = Mock()
+	browser.evaluate_js.return_value = {
+		"ok": True,
+		"data": {"abstractData": {"geekBaseInfo": {"name": "fixture"}}},
+		"canvas": {"draws": [{"canvas": 0, "x": 0, "y": 20, "text": "fixture"}]},
+	}
+	client._get_browser = Mock(return_value=browser)
+	result = client.view_geek("geek", "job", "card-security", source="recommend", expect_id=123, lid="card-lid")
+	assert result["code"] == 0
+	client._request.assert_not_called()
+	args = browser.evaluate_js.call_args.args[1]
+	assert args["securityId"] == "card-security"
+	assert args["expectId"] == 123
+	assert args["lid"] == "card-lid"
+	assert args["resumeSource"] == "recommend"
+	assert browser.evaluate_js.call_args.kwargs == {"maintain_rendering": True}
+
+
+def test_recommend_resume_rejects_missing_context_before_browser():
+	client = BossRecruiterClient(FakeAuthManager())
+	client._request = Mock()
+	client._get_browser = Mock()
+	assert client.view_geek("geek", "job", "security", source="recommend")["code"] != 0
+	client._request.assert_not_called()
+	client._get_browser.assert_not_called()
+
+
 def test_view_geek_refreshes_context_and_uses_wasm_iframe():
 	client = BossRecruiterClient(FakeAuthManager())
 	client._request = Mock(
@@ -131,8 +161,17 @@ def test_canvas_project_mapping_and_partial_metadata():
 	from boss_agent_cli.api.resume_canvas import enrich_canvas_resume
 
 	summary = {"geekProjExpList": [{"name": "项目甲"}, {"name": "项目乙"}]}
-	lines = ["项目经验项目甲负责人", "2024.10 - 2025.06", "React 技术栈", "材料库导出查看全部",
-		"项目乙负责人", "2024.08 - 2024.10", "Axios 请求模块", "教育经历大学", "课程"]
+	lines = [
+		"项目经验项目甲负责人",
+		"2024.10 - 2025.06",
+		"React 技术栈",
+		"材料库导出查看全部",
+		"项目乙负责人",
+		"2024.08 - 2024.10",
+		"Axios 请求模块",
+		"教育经历大学",
+		"课程",
+	]
 	canvas = {"draws": [{"canvas": 1, "x": 0, "y": i * 20, "text": text} for i, text in enumerate(lines)]}
 	info, capture = enrich_canvas_resume(summary, canvas)
 	assert info["geekProjExpList"][0]["projectDescription"] == "React 技术栈\n材料库导出"
@@ -149,9 +188,14 @@ def test_canvas_project_mapping_and_partial_metadata():
 def test_canvas_duplicate_project_titles_do_not_guess():
 	from boss_agent_cli.api.resume_canvas import enrich_canvas_resume
 
-	info, capture = enrich_canvas_resume({"geekProjExpList": [{"name": "项目甲"}]}, {
-		"draws": [{"text": "项目甲", "x": 0, "y": y} for y in (10, 30)], "capped": True, "timed_out": True,
-	})
+	info, capture = enrich_canvas_resume(
+		{"geekProjExpList": [{"name": "项目甲"}]},
+		{
+			"draws": [{"text": "项目甲", "x": 0, "y": y} for y in (10, 30)],
+			"capped": True,
+			"timed_out": True,
+		},
+	)
 	assert "projectDescription" not in info["geekProjExpList"][0]
 	assert "project_anchor_ambiguous" in capture["reasons"]
 	assert "capture_limit" in capture["reasons"]
@@ -173,13 +217,34 @@ def test_summary_only_is_not_reported_as_canvas_success():
 def test_full_traversal_maps_work_and_preserves_extra_sections():
 	from boss_agent_cli.api.resume_canvas import enrich_canvas_resume
 
-	summary = {"geekWorkExpList": [{"company": "公司甲"}, {"company": "公司乙"}],
-		"geekEduExpList": [{"school": "大学"}]}
-	lines = ["基本信息", "工作经历公司甲工程师", "2024.01 - 2025.01", "第一段职责",
-		"公司乙工程师", "2023.01 - 2024.01", "第二段职责", "教育经历大学", "2020 - 2023",
-		"主修课程：计算机", "所获荣誉", "奖学金", "专业技能", "Python"]
-	canvas = {"draws": [{"canvas": 0, "x": 0, "y": i * 20, "text": t} for i, t in enumerate(lines)],
-		"composited": True, "reached_bottom": True, "height_measured": True, "snapshots": 4, "scroll_steps": 2}
+	summary = {
+		"geekWorkExpList": [{"company": "公司甲"}, {"company": "公司乙"}],
+		"geekEduExpList": [{"school": "大学"}],
+	}
+	lines = [
+		"基本信息",
+		"工作经历公司甲工程师",
+		"2024.01 - 2025.01",
+		"第一段职责",
+		"公司乙工程师",
+		"2023.01 - 2024.01",
+		"第二段职责",
+		"教育经历大学",
+		"2020 - 2023",
+		"主修课程：计算机",
+		"所获荣誉",
+		"奖学金",
+		"专业技能",
+		"Python",
+	]
+	canvas = {
+		"draws": [{"canvas": 0, "x": 0, "y": i * 20, "text": t} for i, t in enumerate(lines)],
+		"composited": True,
+		"reached_bottom": True,
+		"height_measured": True,
+		"snapshots": 4,
+		"scroll_steps": 2,
+	}
 	info, capture = enrich_canvas_resume(summary, canvas)
 	assert info["geekWorkExpList"][0]["responsibility"] == "第一段职责"
 	assert info["geekWorkExpList"][1]["responsibility"] == "第二段职责"

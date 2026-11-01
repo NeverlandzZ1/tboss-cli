@@ -1,4 +1,5 @@
 """Exercise compositing, traversal, identity guards and cleanup without a browser."""
+
 import json
 import shutil
 import subprocess
@@ -8,15 +9,26 @@ import pytest
 from boss_agent_cli.api.recruiter_client import _ONLINE_RESUME_ACTION_JS
 
 
-@pytest.mark.parametrize("mode,ok", [("success", True), ("mismatch", False), ("empty", False),
-	("wasm_error", False), ("load_error", False), ("timeout", True), ("stalled", True)])
+@pytest.mark.parametrize(
+	"mode,ok",
+	[
+		("success", True),
+		("recommend", True),
+		("mismatch", False),
+		("empty", False),
+		("wasm_error", False),
+		("load_error", False),
+		("timeout", True),
+		("stalled", True),
+	],
+)
 def test_canvas_browser_lifecycle(mode, ok):
 	node = shutil.which("node")
 	if not node:
 		pytest.skip("Node is required for browser-JS lifecycle tests")
 	harness = r"""
 const mode=MODE;
-let now=0,removed=false,callback,timerId=0,scroll=0;
+let now=0,removed=false,callback,timerId=0,scroll=0,sent;
 const timers=new Map(),intervals=new Map(),listeners=new Set();
 Date.now=()=>now;
 globalThis.location={origin:'https://www.zhipin.com'};
@@ -42,6 +54,7 @@ const wrapper={style:{},clientHeight:800,get scrollHeight(){return parseInt(fram
  appendChild(){},remove(){removed=true}};
 const win={location:{origin:mode==='load_error'?'https://other.invalid':location.origin},CanvasRenderingContext2D:Context,
  postMessage(m){
+  sent=m;
   if(mode!=='empty')render();
   const data=mode==='wasm_error'?{type:'WASM_ERROR',data:{message:'failed'}}:
    {type:'IFRAME_DONE',data:{abstractData:{geekBaseInfo:{encryptGeekId:mode==='mismatch'?'wrong':'target',userId:123}}}};
@@ -56,13 +69,16 @@ globalThis.clearTimeout=id=>timers.delete(id);
 globalThis.setInterval=fn=>{intervals.set(++timerId,fn);return timerId};
 globalThis.clearInterval=id=>intervals.delete(id);
 globalThis.window={addEventListener(t,fn){listeners.add(fn)},removeEventListener(t,fn){listeners.delete(fn)}};
-const pending=(SCRIPT)({encryptUid:'target',uid:123,timeoutMs:25000});
+const pending=(SCRIPT)({encryptUid:'target',uid:123,timeoutMs:25000,
+ ...(mode==='recommend'?{resumeSource:'recommend',encryptJobId:'job',expectId:456,lid:'card-lid',securityId:'card-security'}:{})});
 if(mode!=='timeout'&&mode!=='empty')for(let i=0;i<14;i++){now+=500;for(const fn of [...intervals.values()])fn()}
 for(const fn of [...timers.values()])fn();
-pending.then(result=>console.log(JSON.stringify({result,removed,restored:Context.prototype.fillText===original,
+pending.then(result=>console.log(JSON.stringify({result,removed,sent,src:frame.src,restored:Context.prototype.fillText===original,
  timers:timers.size,intervals:intervals.size,listeners:listeners.size})));
 """.replace("MODE", json.dumps(mode)).replace("SCRIPT", _ONLINE_RESUME_ACTION_JS)
-	run = subprocess.run([node, "-e", harness], capture_output=True, text=True, encoding="utf-8", timeout=10, check=True)
+	run = subprocess.run(
+		[node, "-e", harness], capture_output=True, text=True, encoding="utf-8", timeout=10, check=True
+	)
 	value = json.loads(run.stdout)
 	assert value["result"]["ok"] is ok
 	assert value["removed"] and value["restored"]
@@ -72,12 +88,24 @@ pending.then(result=>console.log(JSON.stringify({result,removed,restored:Context
 		text = "".join(row["text"] for row in capture["draws"])
 		assert "查看全部" not in text
 		assert "第一页" in text
-		if mode == "success":
+		if mode in {"success", "recommend"}:
 			assert "最后一页" in text
 			assert capture["reached_bottom"]
 			assert capture["scroll_steps"] == 1
 			assert capture["content_height"] == 1400  # not the bootstrap 1200px
 			assert capture["height_measured"]
+			if mode == "recommend":
+				assert value["src"].endswith("source=recommend")
+				assert value["sent"]["data"]["requestParams"] == {
+					"encryptJid": "job",
+					"expectId": 456,
+					"securityId": "card-security",
+					"lid": "card-lid",
+					"entrance": 0,
+					"wayType": 0,
+					"sourceType": 3,
+				}
+				assert value["sent"]["data"]["dataSourceParams"]["resumeSource"] == "recommend-resume"
 		elif mode == "stalled":
 			assert capture["render_stalled"] and not capture["reached_bottom"]
 		else:

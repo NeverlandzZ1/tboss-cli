@@ -483,7 +483,7 @@ class BrowserSession:
 # ─── Raw CDP helper for evaluate_js ──────────────────────────────────────
 
 
-def _pick_chat_target_ws(cdp_http_url: str) -> str:
+def _pick_chat_target_ws(cdp_http_url: str, *, allow_recommend: bool = False) -> str:
 	import json as _json
 	import urllib.request
 
@@ -499,6 +499,16 @@ def _pick_chat_target_ws(cdp_http_url: str) -> str:
 			target_ws = t.get("webSocketDebuggerUrl")
 			if target_ws:
 				return cast("str", target_ws)
+	if allow_recommend:
+		for t in tabs:
+			url = t.get("url", "")
+			if (
+				t.get("type") == "page"
+				and _is_zhipin_url(url)
+				and urlparse(url).path.rstrip("/") == "/web/chat/recommend"
+			):
+				if t.get("webSocketDebuggerUrl"):
+					return cast("str", t["webSocketDebuggerUrl"])
 	raise RecruiterChatTabRequired()
 
 
@@ -541,7 +551,7 @@ def _cdp_evaluate_in_chat_tab(cdp_http_url: str, script: str, arg: Any, *, maint
 
 	import websockets.sync.client as _ws_client
 
-	target_ws = _pick_chat_target_ws(cdp_http_url)
+	target_ws = _pick_chat_target_ws(cdp_http_url, allow_recommend=maintain_rendering)
 	expression = _build_eval_expression(script, arg)
 
 	with _ws_client.connect(target_ws, max_size=8 * 1024 * 1024) as ws:

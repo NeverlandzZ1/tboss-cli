@@ -1,9 +1,23 @@
+import io
 import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from boss_agent_cli.api.browser_client import _cdp_evaluate_in_chat_tab
+from boss_agent_cli.api.browser_client import RecruiterChatTabRequired, _cdp_evaluate_in_chat_tab, _pick_chat_target_ws
+
+
+@pytest.mark.parametrize("allowed", [False, True])
+def test_recommend_target_only_allowed_for_resume_rendering(allowed):
+	tabs = [
+		{"type": "page", "url": "https://www.zhipin.com/web/chat/recommend", "webSocketDebuggerUrl": "ws://recommend"}
+	]
+	with patch("urllib.request.urlopen", return_value=io.StringIO(json.dumps(tabs))):
+		if allowed:
+			assert _pick_chat_target_ws("http://test", allow_recommend=True) == "ws://recommend"
+		else:
+			with pytest.raises(RecruiterChatTabRequired):
+				_pick_chat_target_ws("http://test")
 
 
 @pytest.mark.parametrize("failure", [None, "js", "transport", "enable", "reset"])

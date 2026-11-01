@@ -11,6 +11,28 @@ CDP 简历命令现在会在同一连接内临时启用焦点模拟，维持 Can
 uv run boss --cdp-url http://localhost:9222 --role recruiter hr resume "<encryptUid>" --job-id "<encryptJobId>" --security-id "<securityId>"
 ```
 
+## 推荐候选人（无需先打招呼）
+
+从同一次 `hr recommend` 返回的 `data.geekList[].geekCard` 取
+`encryptGeekId`、`encryptJobId`、`securityId`、`expectId`、`lid`：
+
+```powershell
+uv run boss --cdp-url http://localhost:9222 --role recruiter hr resume "<encryptGeekId>" --job-id "<encryptJobId>" --security-id "<securityId>" --source recommend --expect-id <expectId> --lid "<lid>" --raw
+```
+
+chat 来源默认不变，先调用 `/wapi/zpjob/chat/geek/info` 刷新凭证。
+recommend 来源不调用该接口；官方 iframe 为 `c-resume/?source=recommend`，
+请求参数为 `encryptJid / expectId / securityId / lid / entrance=0 / wayType=0 / sourceType=3`。
+二者最终均使用 `/wapi/zpjob/view/geek/info/v2`，经 challenge 和官方渲染器处理；
+推荐列表中的工作描述不代表完整在线简历。凭证过期应重新获取同一张卡片的整套参数，
+不要混用不同候选人的字段。采集本身不发送首招。
+
+`--raw` 的全文在 `data.zpData.geekDetailInfo.renderedText`，完整性在
+`data.zpData.capture`；普通输出则是 `data.rendered_text` 和 `data.capture`。
+简历采集可在已登录的沟通页或推荐页执行；聊天发送命令的页面要求不变。
+
+## 采集机制
+
 浏览器中的官方 iframe 负责新版接口、challenge 和 WASM。CLI 在发出
 `SET_RESUME` 前监听该临时 iframe 的文字绘制，不点击聊天框、不发消息、
 不请求附件。临时 iframe 使用独立滚动容器；采集器追踪离屏画布的
@@ -36,6 +58,10 @@ uv run boss --cdp-url http://localhost:9222 --role recruiter hr resume "<encrypt
   被遮蔽信息的完整性承诺。平台显示的星号会原样保留。
 
 `--raw` 返回摘要与绘制文字合成的数据，不是原始 HTTP 响应。
+招聘 Skill 使用 `data.zpData.geekDetailInfo` 下的 `geekEduExpList`、`renderedText`
+与 `renderedSections` 提取筛选事实；不要把默认展示格式的空 `basic.degree`
+当作无学历。采集与 `capture` 诊断由 CLI 负责，Skill 不重复实现采集完整性门禁。
+CLI stdout/stderr 固定 UTF-8，Windows GBK 环境下的特殊字符不应变成网络错误。
 没有绘制文字或候选人身份不匹配时返回错误，不将摘要当作全文成功。
 不会将全文中的成果条目猜测拆成 `achievement`，也不会自动点击展开控件。
 
@@ -68,3 +94,11 @@ uv run boss --cdp-url http://localhost:9222 --role recruiter hr resume "<encrypt
 命令结束时窗口仍为最小化。105 项相关测试及 Ruff 检查通过。
 切换到其他标签页后，同一正式命令也得到相同的 1708 字符；结束后招聘者页
 恢复 `hidden`，验证焦点模拟未残留。测试创建的空白标签已关闭。
+
+2026-11-02 推荐来源正式命令验收：重新绑定已登录的 `localhost:9222` 会话后，
+执行 `hr recommend`，选取 `isFriend=0`、`haveChatted=0` 的卡片，将同一卡片
+参数传给 `hr resume --source recommend --expect-id ... --lid ... --raw`。
+Chrome 最小化状态下获得 1613 字符、481 字符项目正文，2 次滚动、4 次快照，
+结果为 `rendered_complete`，原因列表为空；命令结束时窗口仍为最小化，随后恢复
+原窗口状态。没有调用打招呼或附件请求。110 项 CLI 相关测试与 6 项 Skill
+契约测试通过。此结果验证该样本的已渲染正文采集，不代表所有候选人的信息均完整。

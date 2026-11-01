@@ -226,3 +226,14 @@ This project is for learning and local assistance only; follow applicable laws, 
 ## 📑 License & Communities
 
 [MIT](LICENSE) © [can4hou6joeng4](https://github.com/can4hou6joeng4) · [LINUX DO](https://linux.do/)
+
+# Fork-specific recruiter integration
+
+For this tboss-cli fork, use the [HR command contract](skill/boss-agent-cli-commands.md)
+and [online resume guide](docs/online-resume-canvas.md). Chat resumes refresh chat context;
+recommended resumes use `--source recommend --expect-id ... --lid ...` from one card,
+without greeting first. Both use the official v2 iframe and Canvas text capture.
+`--raw` contains the summary plus rendered text, not an original HTTP response.
+The configure Skill installs the latest approved Git HEAD and checks the actual executable;
+equal package version numbers do not imply equal code. The recruiter Skill extracts facts
+from `zpData.geekDetailInfo`, including education records and rendered sections.

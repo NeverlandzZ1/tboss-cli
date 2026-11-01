@@ -1,6 +1,7 @@
 from pathlib import Path
 from collections.abc import Sequence
 from typing import Any
+import sys
 
 import click
 
@@ -23,6 +24,11 @@ class BossCliGroup(click.Group):
 		standalone_mode: bool = True,
 		**extra: Any,
 	) -> Any:
+		# Pipe output must not inherit Windows GBK: resumes can contain bullets,
+		# emoji and other Unicode outside that code page.
+		for stream in (sys.stdout, sys.stderr):
+			if hasattr(stream, "reconfigure"):
+				stream.reconfigure(encoding="utf-8")
 		try:
 			return super().main(
 				args=args,

@@ -202,8 +202,6 @@ return {ok: false, error: 'accept resume click was not confirmed by page state',
 """
 
 
-
-
 atexit.register(_close_open_clients)
 
 
@@ -294,8 +292,7 @@ class BossRecruiterClient(_BaseHttpClient):
 			}
 		"""
 		script = (
-			template
-			.replace("__HELPERS__", _CHAT_FRONTEND_HELPERS_JS)
+			template.replace("__HELPERS__", _CHAT_FRONTEND_HELPERS_JS)
 			.replace("__REQUIRE_SECURITY_ID__", "true" if require_security_id else "false")
 			.replace("__ACTION__", action_js)
 		)
@@ -317,7 +314,9 @@ class BossRecruiterClient(_BaseHttpClient):
 		events = capture.get("events", []) if isinstance(capture, dict) else []
 		return result, cast("list[dict[str, Any]]", events)
 
-	def _matching_chat_send_events(self, events: list[dict[str, Any]], expected_bits: list[str]) -> list[dict[str, Any]]:
+	def _matching_chat_send_events(
+		self, events: list[dict[str, Any]], expected_bits: list[str]
+	) -> list[dict[str, Any]]:
 		return [
 			event
 			for event in events
@@ -553,11 +552,22 @@ class BossRecruiterClient(_BaseHttpClient):
 			extra_headers={"Referer": referer},
 		)
 
-	def view_geek(self, geek_id: str, job_id: str, security_id: str | None = None) -> dict[str, Any]:
+	def view_geek(
+		self,
+		geek_id: str,
+		job_id: str,
+		security_id: str | None = None,
+		*,
+		source: str = "chat",
+		expect_id: int | None = None,
+		lid: str | None = None,
+	) -> dict[str, Any]:
 		"""Fetch and decrypt the current online resume through BOSS's v2 WASM flow.
 
 		The retired v1 endpoint accepted ``encryptGeekId``/``encryptJobId`` directly.
-		The v2 page first refreshes candidate context through ``chat/geek/info``, then
+		Chat resumes refresh candidate context through ``chat/geek/info``; recommended
+		resumes use the original recommendation card context without starting a chat.
+		The v2 page then
 		loads a signed challenge and decrypts ``encryptGeekDetailInfo`` inside the
 		BOSS resume iframe. Reusing that official iframe flow keeps the CLI output
 		compatible with the existing parser without embedding BOSS's rotating WASM.
@@ -565,22 +575,31 @@ class BossRecruiterClient(_BaseHttpClient):
 		if not security_id:
 			return {"code": -1, "message": "缺少 securityId", "zpData": {}}
 
-		context = self._request(
-			"GET",
-			ep.BOSS_CHAT_GEEK_INFO_URL,
-			params={"encryptGeekId": geek_id, "securityId": security_id, "jobId": job_id},
-		)
-		if context.get("code") != 0:
-			return context
+		if source not in {"chat", "recommend"}:
+			return {"code": -1, "message": "未知简历来源", "zpData": {}}
+		if source == "recommend":
+			if not expect_id or not lid:
+				return {"code": -1, "message": "推荐简历缺少 expectId 或 lid", "zpData": {}}
+			# Credentials come from one recommendation card; no chat context refresh.
+			context_data = {"expectId": expect_id}
+			fresh_security_id = security_id
+		else:
+			context = self._request(
+				"GET",
+				ep.BOSS_CHAT_GEEK_INFO_URL,
+				params={"encryptGeekId": geek_id, "securityId": security_id, "jobId": job_id},
+			)
+			if context.get("code") != 0:
+				return context
 
-		context_data = (context.get("zpData") or {}).get("data") or {}
-		fresh_security_id = context_data.get("securityId")
-		if not fresh_security_id:
-			return {
-				"code": -1,
-				"message": "chat/geek/info 未返回新版简历所需的 securityId",
-				"zpData": {},
-			}
+			context_data = (context.get("zpData") or {}).get("data") or {}
+			fresh_security_id = context_data.get("securityId")
+			if not fresh_security_id:
+				return {
+					"code": -1,
+					"message": "chat/geek/info 未返回新版简历所需的 securityId",
+					"zpData": {},
+				}
 
 		result = self._get_browser().evaluate_js(
 			_ONLINE_RESUME_ACTION_JS,
@@ -593,6 +612,7 @@ class BossRecruiterClient(_BaseHttpClient):
 				"uid": context_data.get("uid"),
 				"jobId": context_data.get("jobId"),
 				"timeoutMs": 25000,
+				**({"resumeSource": "recommend", "lid": lid} if source == "recommend" else {}),
 			},
 			maintain_rendering=True,
 		)
@@ -600,7 +620,7 @@ class BossRecruiterClient(_BaseHttpClient):
 			message = result.get("error") if isinstance(result, dict) else "在线简历 WASM 返回格式异常"
 			return {"code": -1, "message": message or "在线简历 WASM 解密失败", "zpData": {}}
 
-		abstract_data = ((result.get("data") or {}).get("abstractData") or {})
+		abstract_data = (result.get("data") or {}).get("abstractData") or {}
 		if not isinstance(abstract_data, dict) or not abstract_data:
 			return {"code": -1, "message": "在线简历 WASM 未返回可解析数据", "zpData": {}}
 
@@ -733,7 +753,9 @@ class BossRecruiterClient(_BaseHttpClient):
 
 	def job_detail(self, enc_job_id: str) -> dict[str, Any]:
 		params = {"encJobId": enc_job_id, "lid": "", "encAtsJobId": ""}
-		referer = f"{ep.BASE_URL}/web/frame/job/edit?jobversion=9921&encryptId={enc_job_id}&jobCreateSource=0&enterSource=6"
+		referer = (
+			f"{ep.BASE_URL}/web/frame/job/edit?jobversion=9921&encryptId={enc_job_id}&jobCreateSource=0&enterSource=6"
+		)
 		return self._request("GET", ep.BOSS_JOB_EDIT_URL, params=params, extra_headers={"Referer": referer})
 
 	# ── 交换联系方式（手机/微信/简历）─────────────────────

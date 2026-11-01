@@ -218,10 +218,18 @@ Usage: boss hr resume [OPTIONS] [GEEK_ID]
   --uid INT              旧路径,用 friend-id 更稳
   --gid INT              旧路径
   --friend-id INT        新路径 (issue #217)
-  --raw                  输出原始 API,不解析
+  --source [chat|recommend] 来源，默认 chat
+  --expect-id INT         推荐卡片 expectId，recommend 必填
+  --lid TEXT              同一推荐卡片 lid，recommend 必填
+  --raw                  输出摘要 + Canvas 采集数据，并非原始 HTTP 响应
 ```
 
-- 端点:`GET /wapi/zpjob/view/geek/info`
+- 最终端点:`GET /wapi/zpjob/view/geek/info/v2`，经官方 iframe / WASM 渲染采集。
+- chat 来源先通过 `chat/geek/info` 刷新上下文；recommend 来源直接使用同一推荐卡片的凭证，不刷新聊天上下文，不发送首招。
+- recommend 调用：`boss hr resume <encryptGeekId> --job-id <encryptJobId> --security-id <securityId> --source recommend --expect-id <expectId> --lid <lid> --raw`。
+- 检查 `capture.completeness`；`ok=true` 或 `--raw` 不保证全文完整。raw 路径是 `data.zpData.capture`，默认输出路径是 `data.capture`。
+- 上项为 CLI 采集排障字段；招聘 Skill 不另设 capture 门禁。Skill 固定读取 `--raw` 的 `data.zpData.geekDetailInfo`，从教育列表和绘制正文提取筛选字段，不依赖默认展示格式的空摘要字段。
+- 详细机制与限制见 [在线简历采集](../docs/online-resume-canvas.md)。
 - 三个凭证一起用:`encryptUid` (地址位参) / `--job-id` (encryptJobId) / `--security-id`
 - **合规**:默认拦,要 `research` 模式
 
